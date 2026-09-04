@@ -89,6 +89,7 @@
       <h3 style="margin-top:0">Get your free audit</h3>
       <div class="form-grid">
         <div class="full"><label>Website URL *</label><input id="website" placeholder="https://example.com" /></div>
+        <div class="full"><label>Your Email *</label><input id="visitorEmail" type="email" placeholder="you@company.com" /></div>
         <div><label>Business name</label><input id="business" placeholder="ABC Business" /></div>
         <div><label>City</label><input id="city" placeholder="Mumbai" /></div>
         <div class="full"><label>Industry</label><input id="industry" placeholder="Dental Clinic / School / Real Estate" /></div>
@@ -145,7 +146,7 @@
 </section>
 
 <footer>
-  <div class="container"><b>CGS Infotech</b> • CGS Digital Growth Score™ •  Discover opportunities. Strengthen visibility. Accelerate growth.</div>
+  <div class="container"><b>CGS Infotech</b> • CGS Digital Growth Score™ • Discover opportunities. Strengthen visibility. Accelerate growth.</div>
 </footer>
 
 <script>
@@ -166,8 +167,20 @@ function showError(msg){
 async function runAudit(){
   document.getElementById("error").style.display="none";
   const website=document.getElementById("website").value.trim();
+  const visitorEmail=document.getElementById("visitorEmail").value.trim();
   if(!website){showError("Please enter a website URL.");return;}
+  if(!visitorEmail || visitorEmail.indexOf("@")===-1){showError("Please enter a valid email address.");return;}
   document.getElementById("loading").style.display="block";
+  const businessName=document.getElementById("business").value.trim();
+  // Capture the visitor's email as an early lead, even if they never fill the
+  // detailed form below. Fire-and-forget: this must never block the audit.
+  fetch("/api/leads",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    name: businessName || "Website Visitor",
+    email: visitorEmail,
+    phone: "",
+    company: businessName,
+    website: website
+  })}).catch(()=>{});
   try{
     const res=await fetch("/api/audit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
       website,
@@ -181,6 +194,8 @@ async function runAudit(){
     render(data);
     document.getElementById("results").style.display="block";
     document.getElementById("results").scrollIntoView({behavior:"smooth"});
+    const leadEmailField=document.getElementById("leadEmail");
+    if(leadEmailField && !leadEmailField.value) leadEmailField.value=visitorEmail;
   }catch(e){showError(e.message)}
   finally{document.getElementById("loading").style.display="none";}
 }
